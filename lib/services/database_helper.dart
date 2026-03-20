@@ -133,6 +133,12 @@ class DatabaseHelper {
     return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
+  // --- CLEAR: hapus semua data lokal (saat logout / ganti akun) ---
+  Future<void> clearAll() async {
+    final db = await database;
+    await db.delete('transactions');
+  }
+
   Future close() async {
     final db = await database;
     db.close();

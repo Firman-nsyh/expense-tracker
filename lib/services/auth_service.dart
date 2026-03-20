@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'database_helper.dart';
 
 class AuthService {
   static final AuthService instance = AuthService._();
@@ -55,6 +56,8 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    // Bersihkan data lokal sebelum logout agar akun lain tidak melihat data ini
+    await DatabaseHelper.instance.clearAll();
     await _googleSignIn.signOut();
     await _auth.signOut();
   }

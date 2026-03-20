@@ -64,7 +64,11 @@ class SyncService {
 
   // --- Sinkronisasi dua arah saat login ---
   Future<void> syncOnLogin() async {
-    await downloadAll(); // ambil data dari cloud
-    await uploadAll();   // upload data lokal ke cloud
+    // Bersihkan data lokal dulu agar data akun lama tidak tercampur
+    await DatabaseHelper.instance.clearAll();
+    // Download data milik akun yang baru login dari Firebase
+    await downloadAll();
+    // Upload balik ke Firebase (jaga konsistensi)
+    await uploadAll();
   }
 }
