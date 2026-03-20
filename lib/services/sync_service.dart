@@ -9,6 +9,9 @@ class SyncService {
 
   final FirebaseDatabase _db = FirebaseDatabase.instance;
 
+  // ---> TAMBAHAN: Gembok penanda status sinkronisasi <---
+  bool isSyncing = false;
+
   DatabaseReference get _userRef {
     final uid = AuthService.instance.uid;
     return _db.ref('users/$uid/transactions');
@@ -101,12 +104,17 @@ class SyncService {
 
   // --- Sinkronisasi saat login ---
   Future<void> syncOnLogin() async {
-    print('🔵 syncOnLogin mulai...');
-    await DatabaseHelper.instance.clearAll();
-    print('🟢 SQLite lokal dibersihkan');
-    await downloadAll();
-    await uploadAll();
-    print('🟢 syncOnLogin selesai');
+    isSyncing = true; // Kunci gembok: Beri tahu aplikasi sedang sibuk download
+    try {
+      print('🔵 syncOnLogin mulai...');
+      await DatabaseHelper.instance.clearAll();
+      print('🟢 SQLite lokal dibersihkan');
+      await downloadAll();
+      await uploadAll();
+      print('🟢 syncOnLogin selesai');
+    } finally {
+      isSyncing = false; // Buka gembok: Beri tahu download sudah selesai
+    }
   }
 
   // --- Helper: konversi ke format Firebase ---

@@ -32,6 +32,7 @@ class _MainScreenState extends State<MainScreen> {
       const ArchivePageContent(),
       const SettingsPageContent(),
     ];
+    // PERBAIKAN: Dibuat bersih. Tidak perlu memanggil sync dari sini lagi!
   }
 
   void _onItemTapped(int index) {
@@ -287,7 +288,7 @@ class _MainScreenState extends State<MainScreen> {
                           amount: amount,
                           description: desc,
                           category: selectedCategory,
-                          date: DateTime.now(),
+                          date: DateTime.now(), // Sesuaikan dengan modelmu
                           inputMethod: 'manual',
                         ));
                         await SyncService.instance.uploadOne(saved);

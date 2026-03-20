@@ -27,19 +27,27 @@ class HomePageState extends State<HomePageContent> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() => _isLoading = true); // Munculkan loading berputar
+
+    // ---> TAMBAHAN: Tunggu selama proses sync berlangsung <---
+    while (SyncService.instance.isSyncing) {
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Lanjut tarik data dari lokal setelah sync selesai
     final db = DatabaseHelper.instance;
     final total = _selectedFilter == 'Bulan Ini'
         ? await db.getTotalThisMonth()
         : await db.getTotalThisWeek();
     final all = await db.getAllTransactions();
     final monthly = await db.getMonthlyTotals(DateTime.now().year);
+    
     if (mounted) {
       setState(() {
         _totalAmount = total;
         _recentTransactions = all.take(5).toList();
         _monthlyTotals = monthly;
-        _isLoading = false;
+        _isLoading = false; // Matikan loading
       });
     }
   }

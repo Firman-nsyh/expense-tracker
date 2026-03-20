@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
 import '../services/export_service.dart';
 import '../models/transaction_model.dart';
+import '../services/sync_service.dart'; // <-- 1. Tambahkan import ini
 
 class ArchivePageContent extends StatefulWidget {
   const ArchivePageContent({super.key});
@@ -25,13 +26,24 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
     _loadData();
   }
 
+  // ---> 2. Modifikasi _loadData dengan Jurus Tunggu (Loading State) <---
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+
+    // Tunggu sampai proses sinkronisasi dari Firebase selesai
+    while (SyncService.instance.isSyncing) {
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Setelah sync selesai, baru tarik riwayat bulanan dari SQLite
     final months = await DatabaseHelper.instance.getAvailableMonths();
-    setState(() {
-      _availableMonths = months;
-      _isLoading = false;
-    });
+    
+    if (mounted) {
+      setState(() {
+        _availableMonths = months;
+        _isLoading = false;
+      });
+    }
   }
 
   String _formatTotal(dynamic total) {
