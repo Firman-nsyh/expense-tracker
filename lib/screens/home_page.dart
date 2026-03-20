@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/transaction_model.dart';
 import '../services/database_helper.dart';
 import '../services/sync_service.dart';
+import '../services/auth_service.dart';
 
 class HomePageContent extends StatefulWidget {
   const HomePageContent({super.key});
@@ -33,12 +34,14 @@ class HomePageState extends State<HomePageContent> {
         : await db.getTotalThisWeek();
     final all = await db.getAllTransactions();
     final monthly = await db.getMonthlyTotals(DateTime.now().year);
-    setState(() {
-      _totalAmount = total;
-      _recentTransactions = all.take(5).toList();
-      _monthlyTotals = monthly;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _totalAmount = total;
+        _recentTransactions = all.take(5).toList();
+        _monthlyTotals = monthly;
+        _isLoading = false;
+      });
+    }
   }
 
   void _toggleFilter() async {
@@ -90,19 +93,31 @@ class HomePageState extends State<HomePageContent> {
   }
 
   Widget _buildHeader() {
+    final fullName = AuthService.instance.displayName;
+    final firstName = fullName.isNotEmpty ? fullName.split(' ')[0] : 'Pengguna';
+    final photoUrl = AuthService.instance.photoUrl ?? 'https://i.pravatar.cc/300';
+    final isLoggedIn = AuthService.instance.isLoggedIn;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("Halo, Dendy!",
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          Text("Halo, $firstName!",
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           Row(children: [
-            const Icon(Icons.verified_user, size: 14, color: Colors.greenAccent),
+            Icon(
+              isLoggedIn ? Icons.cloud_done : Icons.cloud_off,
+              size: 14,
+              color: isLoggedIn ? Colors.greenAccent : Colors.grey,
+            ),
             const SizedBox(width: 4),
-            Text("Akun: Personal Pro", style: TextStyle(color: Colors.grey[400], fontSize: 14))
+            Text(
+              isLoggedIn ? "Data Tersinkronisasi" : "Mode Offline",
+              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            )
           ])
         ]),
-        const CircleAvatar(radius: 24, backgroundImage: NetworkImage('https://i.pravatar.cc/300'))
+        CircleAvatar(radius: 24, backgroundImage: NetworkImage(photoUrl))
       ],
     );
   }

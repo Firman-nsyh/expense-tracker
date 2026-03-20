@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'database_helper.dart';
+import 'sync_service.dart'; // <-- TAMBAHAN IMPORT DI SINI
 
 class AuthService {
   static final AuthService instance = AuthService._();
@@ -47,6 +48,11 @@ class AuthService {
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
       print('🟢 Login berhasil: ${userCredential.user?.email}');
+
+      // ---> TAMBAHAN: Panggil fungsi sinkronisasi otomatis di sini <---
+      print('🔵 Memulai sinkronisasi data dari server...');
+      await SyncService.instance.syncOnLogin();
+      print('🟢 Sinkronisasi selesai!');
 
       return userCredential.user;
     } catch (e) {
