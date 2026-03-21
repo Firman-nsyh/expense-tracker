@@ -2,16 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'screens/login_page.dart';
 import 'screens/main_screen.dart';
+import 'services/gemini_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load .env untuk API key Gemini
+  await dotenv.load(fileName: '.env');
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Inisialisasi Gemini setelah .env di-load
+  GeminiService.instance.init();
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

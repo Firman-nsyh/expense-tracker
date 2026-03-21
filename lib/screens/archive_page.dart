@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
 import '../services/export_service.dart';
 import '../models/transaction_model.dart';
-import '../services/sync_service.dart'; // <-- 1. Tambahkan import ini
+import '../services/sync_service.dart';
 
 class ArchivePageContent extends StatefulWidget {
   const ArchivePageContent({super.key});
   @override
-  State<ArchivePageContent> createState() => _ArchivePageContentState();
+  State<ArchivePageContent> createState() => ArchivePageState();
 }
 
-class _ArchivePageContentState extends State<ArchivePageContent> {
+class ArchivePageState extends State<ArchivePageContent> {
+  void reload() => _loadData();
   List<Map<String, dynamic>> _availableMonths = [];
   bool _isLoading = true;
   bool _isExporting = false;
@@ -26,7 +27,6 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
     _loadData();
   }
 
-  // ---> 2. Modifikasi _loadData dengan Jurus Tunggu (Loading State) <---
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
@@ -35,9 +35,8 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
       await Future.delayed(const Duration(milliseconds: 200));
     }
 
-    // Setelah sync selesai, baru tarik riwayat bulanan dari SQLite
     final months = await DatabaseHelper.instance.getAvailableMonths();
-    
+
     if (mounted) {
       setState(() {
         _availableMonths = months;
@@ -110,7 +109,6 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -137,7 +135,6 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
             ),
             const SizedBox(height: 32),
 
-            // Export Semua Data
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -174,7 +171,6 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
             ),
             const SizedBox(height: 32),
 
-            // Riwayat Bulanan
             const Text("Riwayat Bulanan",
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
@@ -204,8 +200,7 @@ class _ArchivePageContentState extends State<ArchivePageContent> {
                           return Column(children: [
                             _buildArchiveItem(
                               title: 'Laporan ${_monthNames[month]} $year',
-                              subtitle:
-                                  '${_formatTotal(total)} • $count Transaksi',
+                              subtitle: '${_formatTotal(total)} • $count Transaksi',
                               onDownload: () => _exportMonth(year, month),
                             ),
                             const SizedBox(height: 12),

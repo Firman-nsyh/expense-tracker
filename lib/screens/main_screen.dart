@@ -5,12 +5,14 @@ import 'chat_page.dart';
 import 'archive_page.dart';
 import 'settings_page.dart';
 import 'scanner_page.dart';
+import 'voice_input_page.dart';
 import '../models/transaction_model.dart';
 import '../services/database_helper.dart';
 import '../services/sync_service.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final bool needsReload;
+  const MainScreen({super.key, this.needsReload = false});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -18,8 +20,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  // Gunakan GlobalKey agar bisa trigger refresh HomePageContent dari luar
-  final _homeKey = GlobalKey<HomePageState>();
+  final _homeKey    = GlobalKey<HomePageState>();
+  final _archiveKey = GlobalKey<ArchivePageState>();
 
   late final List<Widget> _pages;
 
@@ -29,16 +31,22 @@ class _MainScreenState extends State<MainScreen> {
     _pages = [
       HomePageContent(key: _homeKey),
       const ChatPageContent(),
-      const ArchivePageContent(),
+      ArchivePageContent(key: _archiveKey),
       const SettingsPageContent(),
     ];
-    // PERBAIKAN: Dibuat bersih. Tidak perlu memanggil sync dari sini lagi!
+    // Jika dari login, reload home & archive setelah widget selesai dibuat
+    if (widget.needsReload) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _homeKey.currentState?.reload();
+        _archiveKey.currentState?.reload();
+      });
+    }
   }
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    // Refresh home setiap kali kembali ke tab home
     if (index == 0) _homeKey.currentState?.reload();
+    if (index == 2) _archiveKey.currentState?.reload();
   }
 
   Color _getAccentColor() {
@@ -288,7 +296,7 @@ class _MainScreenState extends State<MainScreen> {
                           amount: amount,
                           description: desc,
                           category: selectedCategory,
-                          date: DateTime.now(), // Sesuaikan dengan modelmu
+                          date: DateTime.now(),
                           inputMethod: 'manual',
                         ));
                         await SyncService.instance.uploadOne(saved);
@@ -320,31 +328,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showVoiceInputDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 20),
-            const Icon(Icons.mic, color: Colors.redAccent, size: 60),
-            const SizedBox(height: 20),
-            const Text("Mendengarkan...",
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            const Text("Sebutkan nominal dan keterangan.\nCth: 'Dua puluh ribu untuk bensin'",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent.withOpacity(0.2), elevation: 0),
-              child: const Text("Batal", style: TextStyle(color: Colors.redAccent)),
-            )
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VoiceInputPage(
+          onTransactionSaved: () => _homeKey.currentState?.reload(),
         ),
       ),
     );
