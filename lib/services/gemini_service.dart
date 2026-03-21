@@ -19,7 +19,7 @@ class GeminiService {
       return;
     }
     
-    // ---> PERBAIKAN: Gunakan model Lite yang bebas limit kuota 0 <---
+    // Gunakan model Lite yang bebas limit kuota 0
     _model = GenerativeModel(
       model: 'gemini-flash-lite-latest',
       apiKey: _apiKey!,
@@ -163,6 +163,76 @@ Penting:
       print('🔴 Parse error: $e');
       return [];
     }
+  }
+
+  // --- FUNGSI BARU UNTUK CHAT AI (DENGAN KALKULASI MATEMATIKA AKURAT) ---
+  Future<String> askFinancialQuestion(String question, List<TransactionModel> transactions) async {
+    if (!isReady) {
+      return "Maaf, sistem AI sedang tidak siap. Pastikan internetmu aktif ya.";
+    }
+
+    String txData = "Belum ada transaksi.";
+    String summaryData = "";
+
+    if (transactions.isNotEmpty) {
+      // 1. MESIN DART YANG MENGHITUNG MATEMATIKA (DIJAMIN 100% AKURAT)
+      double totalSemua = 0;
+      Map<String, double> totalPerKategori = {};
+      final txList = [];
+
+      for (var t in transactions) {
+        final date = t.date.toIso8601String().split('T')[0];
+        txList.add("- $date | ${t.category} | ${t.description} | Rp ${t.amount.toInt()}");
+        
+        totalSemua += t.amount;
+        totalPerKategori[t.category] = (totalPerKategori[t.category] ?? 0) + t.amount;
+      }
+
+      txData = txList.join('\n');
+
+      // 2. BUAT CONTEKAN UNTUK AI
+      summaryData = "RINGKASAN AKURAT (WAJIB GUNAKAN ANGKA INI JIKA DITANYA TOTAL ATAU PENGELUARAN TERBESAR):\n";
+      summaryData += "- Total Semua Pengeluaran: Rp ${totalSemua.toInt()}\n";
+      totalPerKategori.forEach((kategori, total) {
+        summaryData += "- Total Kategori $kategori: Rp ${total.toInt()}\n";
+      });
+    }
+
+    // 3. PROMPT YANG LEBIH TEGAS
+    final prompt = '''
+Kamu adalah asisten keuangan pribadi yang ramah, cerdas, dan santai. 
+Nama kamu adalah "Moni". 
+
+$summaryData
+
+Berikut adalah riwayat detail transaksi keuangan pengguna saat ini:
+$txData
+
+Pertanyaan Pengguna: "$question"
+
+Tugasmu:
+1. Jawab pertanyaan pengguna HANYA berdasarkan data dan ringkasan di atas.
+2. JANGAN PERNAH MENGHITUNG MANUAL. Jika pengguna bertanya total pengeluaran atau pengeluaran terbesar, langsung ambil angkanya dari bagian "RINGKASAN AKURAT" karena itu sudah dihitung oleh sistem dan pasti benar.
+3. Gunakan bahasa Indonesia yang santai, bersahabat, dan mudah dimengerti.
+4. Gunakan format markdown (bold, bullet points) dan emoji agar rapi.
+5. Jawab dengan logis dan to the point. Jangan mencampuradukkan kategori.
+''';
+
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        print('🔵 Mengirim pertanyaan ke Gemini (percobaan $attempt)...');
+        final content = [Content.text(prompt)];
+        final response = await _model!.generateContent(content);
+        return response.text?.trim() ?? "Maaf, saya agak bingung menjawabnya.";
+      } catch (e) {
+        print('🔴 Gemini chat error (percobaan $attempt): $e');
+        if (attempt == 3) {
+          return "Waduh, koneksi ke otak AI terputus. Coba tanya lagi nanti ya! 😅";
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+    return "Terjadi kesalahan sistem.";
   }
 }
 
